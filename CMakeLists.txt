@@ -11,16 +11,19 @@ FetchContent_Declare(
 FetchContent_MakeAvailable( centurion )
 
 find_package( SDL2 REQUIRED )
-find_package( fmt REQUIRED )
-
-
 
 #include(cmake/PreventInSourceBuilds.cmake)
 include(cmake/CompilerWarnings.cmake)
 
 find_program( CLANG_TIDY_EXE NAMES "clang-tidy" )
+find_program( CLANG_CPPCHECK_EXE NAMES "cppcheck" )
+find_program( CLANG_IWYU_EXE NAMES "iwyu" )
+find_program( CLANG_CPPLINT_EXE NAMES "cppcheck" )
 
-# set(CMAKE_CXX_CLANG_TIDY "${CLANG_TIDY_EXE}")
+#set(CMAKE_CXX_CLANG_TIDY "${CLANG_TIDY_EXE}")
+#set(CMAKE_CXX_CPPCHECK "${CLANG_CPPCHECK_EXE}")
+#set(CMAKE_CXX_CPPLINT "${CLANG_CPPLINT_EXE}")
+#set(CMAKE_CXX_INCLUDE_WHAT_YOU_USE "${CLANG_IWYU_EXE}")
 
 
 # the main program
@@ -37,7 +40,9 @@ add_executable( Game main.cpp
 target_include_directories( Game PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include )
 target_include_directories( Game SYSTEM PRIVATE ${SDL2_INCLUDE_DIRS} ${centurion_SOURCE_DIR}/src )
 #target_compile_definitions( Game PRIVATE CENTURION_MOCK_FRIENDLY_MODE CENTURION_NO_DEBUG_LOG_MACROS)
-target_link_libraries( Game PRIVATE fmt::fmt ${SDL2_LIBRARIES} SDL2_mixer SDL2_ttf SDL2_image )
+target_link_libraries( Game 
+  PRIVATE
+    ${SDL2_LIBRARIES} SDL2_mixer SDL2_ttf SDL2_image )
 
 target_compile_features( Game
   PUBLIC

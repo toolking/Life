@@ -5,23 +5,30 @@
 
 #include <centurion/common/logging.hpp>
 #include <centurion/common/math.hpp>
+#include <centurion/common/utils.hpp>
+#include <centurion/video/renderer.hpp>
+#include <centurion/video/color.hpp>
 
 #include <algorithm>
 #include <numeric>
 #include <ranges>
+#include <cmath>
+#include <string>
+#include <utility>
 
 namespace {
 
 inline constexpr auto init_tiles() -> Board::tiles_type
 {
     Board::tiles_type tiles;
-    std::transform(CHAR_BOARD.begin(), CHAR_BOARD.end(), tiles.begin(), [](char c) -> Board::Tile {
-        switch (c) {
-        case '#': return Board::Tile::wall;
-        case '.': return Board::Tile::pill;
-        case 'o': return Board::Tile::power_pill;
-        case '=': return Board::Tile::door;
-        default: return Board::Tile::empty;
+    std::transform(CHAR_BOARD.begin(), CHAR_BOARD.end(), tiles.begin(), [](char tile_char) -> Board::Tile {
+        switch (tile_char) {
+            using enum Board::Tile;
+        case '#': return wall;
+        case '.': return pill;
+        case 'o': return power_pill;
+        case '=': return door;
+        default: return empty;
         }
     });
     return tiles;
@@ -49,7 +56,7 @@ Board::Board(cen::renderer_handle const& renderer)
   , pill_texture_ {renderer_.make_texture("assets/pill.png")}
   , power_pill_texture_ {renderer_.make_texture("assets/power_pill.png")}
   , lives_texture_ {renderer_.make_texture("assets/lives.png")}
-  , big_font_ {"assets/emulogic.ttf", TILE_SIZE}
+  , big_font_ {BIG_FONT_PATH, BIG_FONT_SIZE}
   , score_label_texture_ {renderer_.make_texture(big_font_.render_solid("Score", cen::colors::white))}
   , score_texture_ {renderer_.make_texture(big_font_.render_solid("0", cen::colors::white))}
   , high_score_label_texture_ {renderer_.make_texture(big_font_.render_solid("High Scores", cen::colors::white))}
@@ -78,12 +85,12 @@ void Board::add_score(int score) noexcept
 
 auto Board::operator[](cen::ipoint const& cell) const -> Tile const&
 {
-    return board_[to_index(cell)];
+    return board_.at(to_index(cell));
 }
 
 auto Board::operator[](cen::ipoint const& cell) -> Tile&
 {
-    return board_[to_index(cell)];
+    return board_.at(to_index(cell));
 }
 
 void Board::eat_if_pill(cen::ipoint const& position)
@@ -96,14 +103,14 @@ void Board::eat_if_pill(cen::ipoint const& position)
         switch (tile) {
             using enum Tile;
         case power_pill: {
-            add_score(50);
+            add_score(POWER_PILL_SCORE);
             tile = empty; // (*this)[board_pos] = empty;
             [[maybe_unused]] auto const [ignore, power_pills] = count_pills();
             CENTURION_LOG_VERBOSE("power pill #%d eaten", POWER_PILLS_COUNT - power_pills);
             return;
         }
         case pill:
-            add_score(10);
+            add_score(PILL_SCORE);
             tile = empty;
             return;
         default: break;
@@ -164,7 +171,7 @@ void Board::render_grid(unsigned size, cen::color color)
 
 void Board::render_door()
 {
-    renderer_.render(door_texture_, cen::ipoint {13, 15} * TILE_SIZE + cen::ipoint {0, TILE_SIZE / 2});
+    renderer_.render(door_texture_, DOOR_CELL * TILE_SIZE + cen::ipoint {0, TILE_SIZE / 2});
 }
 
 void Board::render_pills()
@@ -203,6 +210,7 @@ void Board::render_lives()
 
 void Board::render()
 {
+    renderer_.clear_with(cen::colors::black);
     // render_grid(TILE_SIZE, cen::colors::dark_red);
     // render_grid(SPRITE_SIZE, cen::colors::dark_blue);
     board_texture_.set_color_mod(cen::colors::blue); // blue wall lines

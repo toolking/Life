@@ -1,10 +1,16 @@
 #include "game.hpp"
+#include "constants.hpp"
+#include "direction.hpp"
+#include "ghost.hpp"
 
+#include <centurion/common/logging.hpp>
 #include <centurion/concurrency/thread.hpp>
 #include <centurion/events/event_handler.hpp>
 #include <centurion/events/misc_events.hpp>
+#include <centurion/events/mouse_events.hpp>
 #include <centurion/input/keyboard.hpp>
-#include <centurion/common/logging.hpp>
+#include <centurion/system/timer.hpp>
+#include <centurion/video/renderer.hpp>
 
 Game::Game(cen::renderer const& renderer)
   : renderer_ {renderer}
@@ -74,7 +80,7 @@ void Game::update()
     pacman_.update(board_);
     auto const [pills, power_pills] = board_.count_pills();
     if (pills + power_pills == 0) { // level completed
-        CENTURION_LOG_INFO("Level %d finished!\n",level_++);
+        CENTURION_LOG_INFO("Level %d finished!\n", level_++);
         board_.reset();
         blinky_.reset();
         pinky_.reset();
@@ -98,7 +104,6 @@ void Game::update()
 
 void Game::render()
 {
-    renderer_.clear_with(cen::colors::black);
     board_.render();
     fruit_.render();
     pacman_.render();

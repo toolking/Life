@@ -1,6 +1,11 @@
 #pragma once
 
 #include "ghost.hpp"
+#include "constants.hpp"
+#include "math.hpp"
+#include "pacman.hpp"
+
+#include <centurion/common/math.hpp>
 
 class Clyde final : public Ghost
 {

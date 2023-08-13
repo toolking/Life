@@ -27,7 +27,7 @@ public:
 
     Fruit(cen::renderer_handle const& renderer);
 
-    void update(Board& board, int level, cen::irect const& pacman_position);
+    void update(Board& board, int level, cen::irect const& pacman_box);
     void render();
 
     // fixed position of fruit

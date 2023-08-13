@@ -1,12 +1,21 @@
 #include "fruit.hpp"
 #include "board.hpp"
+#include "constants.hpp"
 
-#include <centurion/common/logging.hpp>
+#include <centurion/common/math.hpp>
+#include <centurion/video/renderer.hpp>
+#include <centurion/video/texture.hpp>
+#include <centurion/video/color.hpp>
+
+#include <chrono>
+#include <string>
+#include <cstddef>
+#include <algorithm>
 
 Fruit::Fruit(cen::renderer_handle const& renderer)
   : renderer_ {renderer}
   , fruit_texture_ {renderer_.make_texture("assets/fruits.png")}
-  , font_ {"assets/VpPixel.ttf", 20U}
+  , font_ {SMALL_FONT_PATH, SMALL_FONT_SIZE}
   , score_texture_ {renderer_.make_texture(font_.render_solid(" ", cen::colors::white))}
 {}
 
@@ -21,7 +30,7 @@ void Fruit::update(Board& board, int level, cen::irect const& pacman_box)
         // check if pacman hit fruit
         if (cen::overlaps(cen::irect {position, cen::iarea {SPRITE_SIZE, SPRITE_SIZE}}, pacman_box)) {
             state_ = State::eaten;
-            auto const score {fruit_scores_[std::size_t(active_fruit_)]};
+            auto const score {fruit_scores_.at(std::size_t(active_fruit_))};
             board.add_score(score);
             score_texture_ = renderer_.make_texture(font_.render_solid(std::to_string(score).c_str(), cen::colors::white));
             timer_.start(); // show score for 1s
@@ -33,12 +42,12 @@ void Fruit::update(Board& board, int level, cen::irect const& pacman_box)
     case State::hidden:
         // show fruit after 70 or 200 pills eaten
         // if not already shown without eating pills in the meantime
-        if ((pills_eaten == 70 || pills_eaten == 200) && !(already_shown_for_ == pills_eaten) ) {
+        if ( std::ranges::contains(SHOW_FRUIT_AT,pills_eaten)&& !(already_shown_for_ == pills_eaten) ) {
             already_shown_for_ = pills_eaten;
             state_ = State::shown;
             timer_.start();
         }
-        active_fruit_ = std::min(level - 1, 21) / 3; // set fruit sprite based on level
+        active_fruit_ = std::min(level - 1, MAX_FRUIT_LEVEL) / 3; // set fruit sprite based on level
         break;
     case State::eaten:
         if (timer_.ticks() > 1s) { // hide score after 1s

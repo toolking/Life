@@ -10,6 +10,10 @@
 constexpr int MIN_FPS = 120;
 constexpr int FRAME_DURATION_MS = 1000 / MIN_FPS;
 
+constexpr int PILL_SCORE {10};
+constexpr int POWER_PILL_SCORE {50};
+constexpr std::array<int,2> SHOW_FRUIT_AT {70,200};
+constexpr int MAX_FRUIT_LEVEL {21};
 constexpr int PACMAN_SPEED {2};
 constexpr int BOARD_WIDTH {28};
 constexpr int BOARD_HEIGHT {36};
@@ -26,6 +30,12 @@ constexpr cen::iarea SPRITE_AREA {SPRITE_SIZE, SPRITE_SIZE};
 constexpr cen::iarea TILE_AREA {TILE_SIZE, TILE_SIZE};
 constexpr cen::irect HOME_CELLS {cen::ipoint {11, 16}, cen::iarea {6, 3}};
 constexpr cen::irect HOME_RECT {HOME_CELLS * TILE_SIZE};
+constexpr cen::ipoint DOOR_CELL {cen::ipoint {13, 15}};
+
+constexpr const char* const SMALL_FONT_PATH {"assets/VpPixel.ttf"};
+constexpr unsigned int SMALL_FONT_SIZE {20U};
+constexpr const char* const BIG_FONT_PATH {"assets/emulogic.ttf"};
+constexpr unsigned int BIG_FONT_SIZE {TILE_SIZE};
 
 constexpr std::string_view CHAR_BOARD {
     // 23456789012345678901234567

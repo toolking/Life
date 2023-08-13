@@ -7,7 +7,6 @@
 #include <centurion/video/texture.hpp>
 
 #include <array>
-#include <string_view>
 
 class Board final
 {
