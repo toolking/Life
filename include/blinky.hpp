@@ -15,7 +15,7 @@ public:
                              .color = cen::colors::red,
                              .start = startpos_of('1'),
                              .home = startpos_of('3'), // use position in home area
-                             .scatter = cen::ipoint {27, 3} * TILE_SIZE // top right
+                             .scatter = TOP_RIGHT * TILE_SIZE // top right
                          }}
     {
     }

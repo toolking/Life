@@ -76,6 +76,12 @@ constexpr std::string_view CHAR_BOARD {
     "                            " //   34
     "                            "}; // 35
 
+constexpr cen::ipoint TOP_LEFT {0, 3};
+constexpr cen::ipoint TOP_RIGHT {27, 3};
+constexpr cen::ipoint BOTTOM_LEFT {0, 33};
+constexpr cen::ipoint BOTTOM_RIGHT {27, 33};
+
+
 static_assert(CHAR_BOARD.size() == BOARD_WIDTH * BOARD_HEIGHT);
 
 [[nodiscard]] constexpr auto count_char(char c) -> int
@@ -116,6 +122,11 @@ static_assert(count_char('F') == 1, "only one fruit allowed");
     return {cell_of(c) * TILE_SIZE + cen::ipoint {TILE_SIZE / 2, 0}};
 }
 
+/// @brief Calculate the distance between two points, taking into account that the
+///        points are on a torus (on the other side of the screen).
+/// @param pos1 pixel position of the first point
+/// @param pos2 pixel position of the second point
+/// @return distance between the points
 [[nodiscard]] constexpr inline auto wrapped_distance(cen::ipoint const& pos1, cen::ipoint const& pos2) -> double
 {
     auto dist_x = abs(pos1.x() - pos2.x());

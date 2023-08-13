@@ -5,8 +5,8 @@
 
 Ghost::Ghost(cen::renderer_handle const& renderer, GhostConfigs configs)
   : Entity(configs.start, Direction::none)
+  , config {configs}
   , renderer_ {renderer}
-  , configs_ {configs}
   , texture_ {renderer_.make_texture("assets/ghost.png")}
   , eye_texture_ {renderer_.make_texture("assets/ghost_eyes.png")}
 {
@@ -14,7 +14,7 @@ Ghost::Ghost(cen::renderer_handle const& renderer, GhostConfigs configs)
 
 void Ghost::reset()
 {
-    position_ = configs_.start;
+    position_ = config.start;
     state_ = State::normal;
 }
 
@@ -23,7 +23,7 @@ void Ghost::set_state(State state)
     state_ = state;
     switch (state_) {
     case State::normal:
-        texture_.set_color_mod(configs_.color);
+        texture_.set_color_mod(config.color);
         break;
     case State::blue:
         texture_.set_color_mod(cen::colors::blue);
@@ -71,7 +71,7 @@ void Ghost::render()
 {
     switch (state_) {
     case State::normal:
-        texture_.set_color_mod(configs_.color);
+        texture_.set_color_mod(config.color);
         eye_texture_.set_color_mod(cen::colors::white);
         renderer_.render(texture_,
             // clip sprite from texture

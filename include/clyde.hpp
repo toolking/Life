@@ -15,7 +15,7 @@ public:
                              .color = cen::colors::orange,
                              .start = startpos_of('4'),
                              .home = startpos_of('4'), // use position in home area
-                             .scatter = cen::ipoint {0, 33} * TILE_SIZE // bottom left
+                             .scatter = BOTTOM_LEFT * TILE_SIZE // bottom left
                          }}
     {
     }
@@ -23,6 +23,6 @@ public:
     [[nodiscard]] virtual auto calc_target(Pacman const& pacman) const -> cen::ipoint
     {
         auto const dist = wrapped_distance(position(), pacman.position());
-        return (dist > 8 * TILE_SIZE) ? pacman.position() : cen::ipoint {0, 33} * TILE_SIZE;
+        return (dist > 8 * TILE_SIZE) ? pacman.position() : config.scatter;
     }
 };

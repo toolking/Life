@@ -45,18 +45,21 @@ public:
     void update(Board&, Pacman const&);
     void render();
 
+protected:
+
+    GhostConfigs const config;
+
 private:
     [[nodiscard]] virtual auto calc_target(Pacman const&) const -> cen::ipoint = 0;
     void update_frame();
 
     cen::renderer_handle renderer_;
-    GhostConfigs const configs_;
     cen::texture texture_;
     cen::texture eye_texture_;
     State state_ {State::normal};
     Timer timer_;
-    cen::u64ms scatter_timer_ {7s};
-    cen::u64ms chase_timer_ {20s};
+    cen::u64ms scatter_timer_ {SCATTER_DURATION};
+    cen::u64ms chase_timer_ {CHASE_DURATION};
     cen::ipoint target_ {};
 
     int render_frame_ {0};

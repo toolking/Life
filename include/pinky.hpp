@@ -15,7 +15,7 @@ public:
                              .color = cen::colors::pink,
                              .start = startpos_of('3'),
                              .home = startpos_of('3'), // use position in home area
-                             .scatter = cen::ipoint {0, 3} * TILE_SIZE // top left
+                             .scatter = TOP_LEFT * TILE_SIZE // top left
                          }}
     {
     }
@@ -24,6 +24,6 @@ public:
     {
         // Pinky's target is 4 blocks ahead of Pacman
         constexpr auto dist = 4 * TILE_SIZE;
-        return pacman.position() + to_point<cen::ipoint::value_type>(pacman.direction()) * dist;
+        return pacman.position() + to_point<int>(pacman.direction()) * dist;
     }
 };

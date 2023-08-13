@@ -53,3 +53,7 @@ target_compile_options(
   Game
   PRIVATE $<$<COMPILE_LANGUAGE:CXX>:${PROJECT_WARNINGS_CXX}>)
 
+include( FindDoxygen )
+find_package(Doxygen
+             REQUIRED dot
+             OPTIONAL_COMPONENTS mscgen dia)
