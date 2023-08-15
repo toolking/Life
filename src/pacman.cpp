@@ -13,8 +13,8 @@ Pacman::Pacman(cen::renderer_handle const& renderer)
 void Pacman::reset() noexcept
 {
     state_ = State::live;
-    position_ = PACMAN_START_POS;
-    direction_ = Direction::none;
+    set_position(PACMAN_START_POS);
+    set_direction(Direction::none);
     next_direction_ = Direction::none;
     render_frame_ = 0;
     frame_ = 0;
@@ -22,11 +22,11 @@ void Pacman::reset() noexcept
 
 void Pacman::update_live_frame(Board const& b)
 {
-    if (direction_ == Direction::none) {
+    if (direction() == Direction::none) {
         render_frame_ = 0;
         return;
     }
-    if (b.is_wall_at_position(position_ + direction_)) {
+    if (b.is_wall_at_position(position() + direction())) {
         render_frame_ = 2;
         return;
     }
@@ -56,16 +56,19 @@ void Pacman::die() noexcept
     frame_ = 0;
 }
 
-void Pacman::set_direction(Direction new_direction) noexcept
+void Pacman::want_direction(Direction new_direction) noexcept
 {
     using enum Direction;
-    if (direction_ == none) { // no direction direct use new direction
-        direction_ = new_direction;
+    //CENTURION_LOG_DEBUG("Pacman::set_direction: %s", new_direction);
+    //CENTURION_LOG_DEBUG("Pacman::direction: %s", direction());
+    [[maybe_unused]] auto a = direction();
+    if (direction() == none) { // no direction direct use new direction
+        set_direction(new_direction);
         next_direction_ = none;
-    } else if (new_direction == direction_) { // same direction
+    } else if (new_direction == direction()) { // same direction
         next_direction_ = none;
-    } else if (new_direction == -direction_) { // opposite direction
-        direction_ = new_direction;
+    } else if (new_direction == -direction()) { // opposite direction
+        set_direction(new_direction);
         next_direction_ = none;
     } else if (new_direction == none) { // set to no direction
         next_direction_ = none;
@@ -76,13 +79,14 @@ void Pacman::set_direction(Direction new_direction) noexcept
 
 void Pacman::update_position(Board const& board)
 {
-    if (!board.is_wall_at_position(position_ + direction_)) {
-        position_ += direction_;
-        wrap_position();
+    if (!board.is_wall_at_position(position() + direction())) {
+        set_position(position() + direction());
+        //position_ += direction_;
+        //wrap_position();
     }
     if (Direction::none != next_direction_) {
-        if (!board.is_wall_at_position(position_ + next_direction_)) {
-            direction_ = next_direction_;
+        if (!board.is_wall_at_position(position() + next_direction_)) {
+            set_direction(next_direction_);
             next_direction_ = Direction::none;
         }
     }
@@ -94,7 +98,7 @@ void Pacman::update(Board& board)
     case State::live:
         for (int i = 0; i < speed(); i++) {
             update_position(board);
-            board.eat_if_pill(position_);
+            board.eat_if_pill(position());
         }
         update_live_frame(board);
         break;
@@ -115,16 +119,16 @@ void Pacman::render()
             // clip sprite from texture
             cen::irect {cen::ipoint {render_frame_ * SPRITE_SIZE, 0}, SPRITE_AREA},
             // paste to screen at position
-            cen::irect {position_ + TILE_TO_SPRITE_OFFSET_2D, SPRITE_AREA},
-            to_angle(direction_));
+            cen::irect {position() + TILE_TO_SPRITE_OFFSET_2D, SPRITE_AREA},
+            to_angle(direction()));
         break;
     case State::dieing:
         renderer_.render(dead_texture_,
             // clip sprite from texture
             cen::irect {cen::ipoint {render_frame_ * SPRITE_SIZE, 0}, SPRITE_AREA},
             // paste to screen at position
-            cen::irect {position_ + TILE_TO_SPRITE_OFFSET_2D, SPRITE_AREA},
-            to_angle(direction_));
+            cen::irect {position() + TILE_TO_SPRITE_OFFSET_2D, SPRITE_AREA},
+            to_angle(direction()));
         break;
     case State::hidden:
     default: break;

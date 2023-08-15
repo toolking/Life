@@ -51,7 +51,8 @@ target_compile_features( Game
 
 target_compile_options(
   Game
-  PRIVATE $<$<COMPILE_LANGUAGE:CXX>:${PROJECT_WARNINGS_CXX}>)
+  PRIVATE
+    $<$<COMPILE_LANGUAGE:CXX>:${PROJECT_WARNINGS_CXX}>)
 
 include( FindDoxygen )
 find_package(Doxygen

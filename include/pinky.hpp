@@ -13,8 +13,8 @@ public:
     Pinky(cen::renderer_handle const& renderer)
       : Ghost {renderer, {
                              .color = cen::colors::pink,
-                             .start = startpos_of('3'),
-                             .home = startpos_of('3'), // use position in home area
+                             .start = startpos_of(PINKY_CHAR),
+                             .home = startpos_of(PINKY_CHAR), // use position in home area
                              .scatter = TOP_LEFT * TILE_SIZE // top left
                          }}
     {

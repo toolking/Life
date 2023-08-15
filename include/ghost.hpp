@@ -27,11 +27,14 @@ using namespace std::chrono_literals;
 class Ghost : public Entity
 {
 public:
+
     enum class State
     {
-        normal,
+        chase,
+        scatter,
         blue,
         eyes,
+        wait,
         hidden
     };
 
@@ -40,9 +43,9 @@ public:
     virtual ~Ghost() = default;
 
     void reset();
-    void set_state(State state);
+    void start_pacman_power();
 
-    void update(Board&, Pacman const&);
+    void update(Board&, Pacman&);
     void render();
 
 protected:
@@ -52,16 +55,31 @@ protected:
 private:
     [[nodiscard]] virtual auto calc_target(Pacman const&) const -> cen::ipoint = 0;
     void update_frame();
+    void calculate_direction(Board const& board);
 
     cen::renderer_handle renderer_;
     cen::texture texture_;
     cen::texture eye_texture_;
-    State state_ {State::normal};
+    State state_ {State::chase};
     Timer timer_;
-    cen::u64ms scatter_timer_ {SCATTER_DURATION};
-    cen::u64ms chase_timer_ {CHASE_DURATION};
+    cen::u64ms scatter_duration_ {SCATTER_DURATION};
+    cen::u64ms chase_duration_ {CHASE_DURATION};
     cen::ipoint target_ {};
 
     int render_frame_ {0};
     int frame_ {0};
+    bool can_use_door_ {true};
 };
+/*
+flowchart LR
+    A((Chase)) -- pacman eats powerpill --> B((Blue))
+    B -- hit by pacman --> C((Eyes))
+    C -- reach homezone --> D((Wait))
+    B -- scatter time over --> A
+    E -- pacman eats powerpill --> B((Blue))
+    subgraph colored
+        A -- chase time over --> E((Scatter))
+        E -- scatter time over --> A
+        D -- scatter time over --> A
+    end
+*/

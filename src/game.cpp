@@ -14,13 +14,13 @@
 
 Game::Game(cen::renderer const& renderer)
   : renderer_ {renderer}
-  , board_ {renderer_}
-  , fruit_ {renderer_}
-  , pacman_ {renderer_}
-  , blinky_ {renderer_}
-  , inky_ {renderer_}
-  , pinky_ {renderer_}
-  , clyde_ {renderer_}
+  , board_    {renderer_}
+  , fruit_    {renderer_}
+  , pacman_   {renderer_}
+  , blinky_   {renderer_}
+  , inky_     {renderer_}
+  , pinky_    {renderer_}
+  , clyde_    {renderer_}
 {}
 
 void Game::run()
@@ -28,9 +28,11 @@ void Game::run()
     running_ = true;
     while (running_) {
         auto const start_loop = cen::now();
+
         process_events();
         update();
         render();
+
         auto const end_loop = cen::now();
         auto const elapsed_ms = (end_loop - start_loop) / (cen::frequency() * 1000U);
         cen::thread::sleep(std::chrono::milliseconds {FRAME_DURATION_MS - elapsed_ms});
@@ -55,13 +57,13 @@ void Game::process_events()
             namespace sc = cen::scancodes;
             using enum Direction;
             if (event.is_active(sc::right) || event.is_active(sc::d)) {
-                pacman_.set_direction(right);
+                pacman_.want_direction(right);
             } else if (event.is_active(sc::up) || event.is_active(sc::w)) {
-                pacman_.set_direction(up);
+                pacman_.want_direction(up);
             } else if (event.is_active(sc::left) || event.is_active(sc::a)) {
-                pacman_.set_direction(left);
+                pacman_.want_direction(left);
             } else if (event.is_active(sc::down) || event.is_active(sc::s)) {
-                pacman_.set_direction(down);
+                pacman_.want_direction(down);
             } else if (event.is_active(sc::k)) {
                 pacman_.die();
             }
@@ -80,8 +82,10 @@ void Game::update()
     pacman_.update(board_);
     auto const [pills, power_pills] = board_.count_pills();
     if (pills + power_pills == 0) { // level completed
-        CENTURION_LOG_INFO("Level %d finished!\n", level_++);
+        CENTURION_LOG_INFO("Level %d finished!\n", level_);
+        ++level_;
         board_.reset();
+        fruit_.reset();
         blinky_.reset();
         pinky_.reset();
         inky_.reset();
@@ -89,10 +93,10 @@ void Game::update()
         pacman_.reset();
     }
     if (power_pills < power_pills_before) { // pacman ate power pill
-        blinky_.set_state(Ghost::State::blue);
-        pinky_.set_state(Ghost::State::blue);
-        inky_.set_state(Ghost::State::blue);
-        clyde_.set_state(Ghost::State::blue);
+        blinky_.start_pacman_power();
+        pinky_.start_pacman_power();
+        inky_.start_pacman_power();
+        clyde_.start_pacman_power();
     }
     fruit_.update(board_, level_, pacman_.box());
     blinky_.update(board_, pacman_);

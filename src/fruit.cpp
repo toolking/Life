@@ -19,6 +19,13 @@ Fruit::Fruit(cen::renderer_handle const& renderer)
   , score_texture_ {renderer_.make_texture(font_.render_solid(" ", cen::colors::white))}
 {}
 
+void Fruit::reset() noexcept
+{
+    state_ = State::hidden;
+    timer_.stop();
+    already_shown_for_ = -1;
+}
+
 void Fruit::update(Board& board, int level, cen::irect const& pacman_box)
 {
     auto const [pills,power_pills] = board.count_pills();

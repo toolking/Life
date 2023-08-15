@@ -31,6 +31,17 @@ void Entity::set_speed(int speed)
     speed_ = speed;
 }
 
+void Entity::set_position(cen::ipoint const& position)
+{
+    position_ = position;
+    wrap_position();
+}
+
+void Entity::set_direction(Direction direction)
+{
+    direction_ = direction;
+}
+
 void Entity::wrap_position()
 {
     if (position_.x() > WINDOW_WIDTH + TILE_SIZE) {

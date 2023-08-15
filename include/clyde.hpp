@@ -13,8 +13,8 @@ public:
     Clyde(cen::renderer_handle const& renderer)
       : Ghost {renderer, {
                              .color = cen::colors::orange,
-                             .start = startpos_of('4'),
-                             .home = startpos_of('4'), // use position in home area
+                             .start = startpos_of(CLYDE_CHAR),
+                             .home = startpos_of(CLYDE_CHAR), // use position in home area
                              .scatter = BOTTOM_LEFT * TILE_SIZE // bottom left
                          }}
     {

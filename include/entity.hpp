@@ -11,16 +11,19 @@ class Entity
 public:
     Entity(cen::ipoint const& position, Direction direction);
 
-    [[nodiscard]] auto position() const -> cen::ipoint const&;
     [[nodiscard]] auto box() const -> cen::irect;
+    [[nodiscard]] auto position() const -> cen::ipoint const&;
     [[nodiscard]] auto direction() const -> Direction;
     [[nodiscard]] auto speed() const -> int;
-    void set_speed(int speed);
 
 protected:
+    void set_position(cen::ipoint const&);
+    void set_direction(Direction);
+    void set_speed(int speed);
 
     void wrap_position();
 
+private:
     cen::ipoint position_ {};
     Direction direction_ {Direction::none};
     int speed_ {2};

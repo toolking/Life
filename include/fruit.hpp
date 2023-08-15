@@ -11,7 +11,7 @@
 
 #include <array>
 
-constexpr cen::ipoint FRUIT_POS {startpos_of('F')+TILE_TO_SPRITE_OFFSET_2D};
+constexpr cen::ipoint FRUIT_POS {startpos_of(FRUIT_CHAR)+TILE_TO_SPRITE_OFFSET_2D};
 
 class Board;
 
@@ -26,7 +26,7 @@ public:
     };
 
     Fruit(cen::renderer_handle const& renderer);
-
+    void reset() noexcept;
     void update(Board& board, int level, cen::irect const& pacman_box);
     void render();
 
@@ -34,7 +34,7 @@ public:
     static constexpr cen::ipoint position {FRUIT_POS};
 
 private:
-    static constexpr std::array<int,8> fruit_scores_ {100, 300, 500, 700, 1000, 2000, 3000, 5000};
+    static constexpr auto fruit_scores_ {std::to_array<int>({100, 300, 500, 700, 1000, 2000, 3000, 5000})};
 
     State state_ {State::hidden};
     cen::renderer_handle renderer_;

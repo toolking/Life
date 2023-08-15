@@ -13,8 +13,8 @@ public:
     Blinky(cen::renderer_handle const& renderer)
       : Ghost {renderer, {
                              .color = cen::colors::red,
-                             .start = startpos_of('1'),
-                             .home = startpos_of('3'), // use position in home area
+                             .start = startpos_of(BLINKY_CHAR),
+                             .home = startpos_of(PINKY_CHAR), // use position in home area
                              .scatter = TOP_RIGHT * TILE_SIZE // top right
                          }}
     {

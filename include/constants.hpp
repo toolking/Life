@@ -12,7 +12,7 @@ constexpr int FRAME_DURATION_MS = 1000 / MIN_FPS;
 
 constexpr int PILL_SCORE {10};
 constexpr int POWER_PILL_SCORE {50};
-constexpr std::array<int,2> SHOW_FRUIT_AT {70,200};
+constexpr auto SHOW_FRUIT_AT {std::to_array<int>({70,200})};
 constexpr int MAX_FRUIT_LEVEL {21};
 constexpr int PACMAN_SPEED {2};
 constexpr int BOARD_WIDTH {28};
@@ -93,6 +93,13 @@ constexpr int PILLS_COUNT {count_char('.')};
 constexpr int POWER_PILLS_COUNT {count_char('o')};
 constexpr int TOTAL_PILLS_COUNT {PILLS_COUNT + POWER_PILLS_COUNT};
 
+constexpr char PACMAN_CHAR {'C'};
+constexpr char BLINKY_CHAR {'1'};
+constexpr char INKY_CHAR {'2'};
+constexpr char PINKY_CHAR {'3'};
+constexpr char CLYDE_CHAR {'4'};
+constexpr char FRUIT_CHAR {'F'};
+
 static_assert(count_char('C') == 1, "only one Pacman allowed");
 static_assert(count_char('1') == 1, "only one Blinky allowed");
 static_assert(count_char('2') == 1, "only one Inky allowed");
@@ -137,5 +144,5 @@ static_assert(count_char('F') == 1, "only one fruit allowed");
 
 [[nodiscard]] constexpr inline auto is_home(cen::ipoint const& pos) -> bool
 {
-    return HOME_RECT.contains(pos);
+    return HOME_CELLS.contains(pos/TILE_SIZE);
 }
