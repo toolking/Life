@@ -57,9 +57,9 @@ template <typename T>
     using enum Direction;
     switch (dir) {
     case right: return 0;
-    case down: return 1;
+    case up: return 1;
     case left: return 2;
-    case up: return 3;
+    case down: return 3;
     default: return 4;
     }
 }

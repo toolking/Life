@@ -8,8 +8,6 @@
 
 #include <centurion/video/renderer.hpp>
 
-constexpr cen::ipoint PACMAN_START_POS {startpos_of(PACMAN_CHAR)};
-
 class Board;
 
 class Pacman final : public Entity

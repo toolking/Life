@@ -210,7 +210,7 @@ void Board::render_lives()
 
 void Board::render()
 {
-    renderer_.clear_with(cen::colors::black);
+    renderer_.clear_with(cen::colors::green);
     // render_grid(TILE_SIZE, cen::colors::dark_red);
     // render_grid(SPRITE_SIZE, cen::colors::dark_blue);
     board_texture_.set_color_mod(cen::colors::blue); // blue wall lines

@@ -34,7 +34,8 @@ public:
         scatter,
         blue,
         eyes,
-        wait,
+        homewait,
+        homeleave,
         hidden
     };
 
@@ -45,7 +46,7 @@ public:
     void reset();
     void start_pacman_power();
 
-    void update(Board&, Pacman&);
+    void update(Board const&, Pacman&);
     void render();
 
 protected:
@@ -55,16 +56,18 @@ protected:
 private:
     [[nodiscard]] virtual auto calc_target(Pacman const&) const -> cen::ipoint = 0;
     void update_frame();
+    void update_position(Board const& board);
+
     void calculate_direction(Board const& board);
 
     cen::renderer_handle renderer_;
     cen::texture texture_;
     cen::texture eye_texture_;
-    State state_ {State::chase};
+    State state_ {State::homeleave};
     Timer timer_;
     cen::u64ms scatter_duration_ {SCATTER_DURATION};
     cen::u64ms chase_duration_ {CHASE_DURATION};
-    cen::ipoint target_ {};
+    cen::ipoint target_ {DOOR_POINT};
 
     int render_frame_ {0};
     int frame_ {0};
@@ -74,12 +77,12 @@ private:
 flowchart LR
     A((Chase)) -- pacman eats powerpill --> B((Blue))
     B -- hit by pacman --> C((Eyes))
-    C -- reach homezone --> D((Wait))
-    B -- scatter time over --> A
+    C -- reach homezone --> D((HomeWait))
+    F -- leaved home --> A
     E -- pacman eats powerpill --> B((Blue))
     subgraph colored
+        D -- scatter time over --> F((HomeLeave))
         A -- chase time over --> E((Scatter))
         E -- scatter time over --> A
-        D -- scatter time over --> A
     end
 */

@@ -1,7 +1,7 @@
 #pragma once
 
-#include "ghost.hpp"
 #include "constants.hpp"
+#include "ghost.hpp"
 #include "math.hpp"
 #include "pacman.hpp"
 
@@ -13,8 +13,8 @@ public:
     Pinky(cen::renderer_handle const& renderer)
       : Ghost {renderer, {
                              .color = cen::colors::pink,
-                             .start = startpos_of(PINKY_CHAR),
-                             .home = startpos_of(PINKY_CHAR), // use position in home area
+                             .start = PINKY_STARTPOS,
+                             .home = PINKY_STARTPOS, // use position in home area
                              .scatter = TOP_LEFT * TILE_SIZE // top left
                          }}
     {

@@ -20,7 +20,7 @@ Ghost::Ghost(cen::renderer_handle const& renderer, GhostConfigs configs)
 void Ghost::reset()
 {
     set_position(config.start);
-    state_ = State::chase;
+    state_ = State::homeleave;
 }
 
 void Ghost::start_pacman_power()
@@ -33,6 +33,7 @@ void Ghost::calculate_direction(Board const& board)
 {
     using dist_dir_type = std::pair<float, Direction>;
     std::vector<dist_dir_type> possibilities;
+    possibilities.reserve(4);
     using enum Direction;
     for (Direction const i : {right, up, left, down}) {
         auto const pos = position() + i;
@@ -60,26 +61,27 @@ void Ghost::update_frame()
     constexpr auto FRAMES_SHOWN = 2;
     constexpr auto SPRITE_FRAMES = 6;
     frame_++;
-    frame_ %= SPRITE_FRAMES * (SPRITE_FRAMES * FRAMES_SHOWN);
-    render_frame_ = frame_ / (SPRITE_FRAMES * FRAMES_SHOWN);
+    frame_ %= SPRITE_FRAMES * SPRITE_FRAMES * FRAMES_SHOWN;
+    render_frame_ = frame_ / SPRITE_FRAMES / FRAMES_SHOWN;
 }
 
-void Ghost::update(Board& board, Pacman& pacman)
+void Ghost::update_position(Board const& board)
+{
+    for (auto i = 0; position() != target_ && i < speed(); i++) {
+        calculate_direction(board);
+        set_position(position() + direction());
+    }
+}
+
+void Ghost::update(Board const& board, Pacman& pacman)
 {
     switch (state_) {
         using enum State;
     case chase:
         target_ = calc_target(pacman);
-        can_use_door_ = is_home(box().center());
+        can_use_door_ = false;
         set_speed(2);
-        for (auto i = 0; i < speed(); i++) {
-            calculate_direction(board);
-            set_position(position() + direction());
-        }
-        if (cen::overlaps(pacman.box(), box())) {
-            // pacman.die();
-            // return;
-        }
+        update_position(board);
         if (timer_.ticks() > chase_duration_) {
             state_ = scatter;
             timer_.start();
@@ -89,14 +91,7 @@ void Ghost::update(Board& board, Pacman& pacman)
     case scatter:
         target_ = config.scatter;
         set_speed(2);
-        for (auto i = 0; i < speed(); i++) {
-            calculate_direction(board);
-            set_position(position() + direction());
-        }
-        if (cen::overlaps(pacman.box(), box())) {
-            // pacman.die();
-            // return;
-        }
+        update_position(board);
         if (timer_.ticks() > scatter_duration_) {
             state_ = chase;
             timer_.start();
@@ -104,30 +99,51 @@ void Ghost::update(Board& board, Pacman& pacman)
         break;
     case blue:
         target_ = config.scatter;
-        set_speed(1);
-        calculate_direction(board);
-        set_position(position() + direction());
+        set_speed(SCATTER_SPEED);
+        update_position(board);
         if (timer_.ticks() > scatter_duration_) {
             state_ = chase;
             timer_.start();
         }
-        if(cen::overlaps(pacman.box(), box())) {
+        if (cen::overlaps(pacman.box(), box())) {
             state_ = eyes;
-            return;
+            target_ = config.home;
+            can_use_door_ = true;
+            set_speed(EYE_SPEED);
+            break;
         }
         update_frame();
         break;
-    case eyes:
-        if (is_home(position())) {
-            state_ = wait;
-            return;
+    case homeleave:
+        if (!is_home(position())) {
+            can_use_door_ = false;
+            state_=chase;
+            break;
         }
-        target_ = config.home;
         can_use_door_ = true;
-        set_speed(6);
-        for (auto i = 0; i < speed(); i++) {
-            calculate_direction(board);
-            set_position(position() + direction());
+        set_speed(CHASE_SPEED);
+        target_ = DOOR_POINT;
+        update_position(board);
+        if (position()==target_) {
+            can_use_door_ = false;
+            state_ = chase;
+        }
+        break;
+    case homewait:
+        if (timer_.ticks()>scatter_duration_) {
+            can_use_door_ = true;
+            state_ = homeleave;
+            break;
+        }
+        can_use_door_ = false;
+        target_ = config.scatter;
+        set_speed(1);
+        update_position(board);
+        break;
+    case eyes:
+        update_position(board);
+        if (position()==target_) {
+            state_ = homewait;
         }
         break;
     case hidden:
@@ -144,21 +160,22 @@ void Ghost::render()
         using enum State;
     case chase:
     case scatter:
-    case wait:
+    case homewait:
+    case homeleave:
         texture_.set_color_mod(config.color);
         eye_texture_.set_color_mod(cen::colors::white);
         renderer_.render(texture_,
             irect {ipoint {render_frame_ * SPRITE_SIZE, 0}, SPRITE_AREA},
             irect {position() + TILE_TO_SPRITE_OFFSET_2D, SPRITE_AREA});
         renderer_.render(eye_texture_,
-            irect {ipoint {eye_frame(Direction::down) * SPRITE_SIZE, 0}, SPRITE_AREA},
+            irect {ipoint {eye_frame(direction()) * SPRITE_SIZE, 0}, SPRITE_AREA},
             irect {position() + TILE_TO_SPRITE_OFFSET_2D, SPRITE_AREA});
         break;
     case blue:
         texture_.set_color_mod(cen::colors::blue);
         eye_texture_.set_color_mod(cen::colors::white);
         if (timer_.ticks() > scatter_duration_ - 2s) { // 2 seconds left
-            if ((timer_.ticks() / 250) % 2 == 1ms) { // blink every 250ms
+            if ((timer_.ticks() / 250) % 2 == 0ms) { // blink every 250ms
                 texture_.set_color_mod(cen::colors::white);
                 eye_texture_.set_color_mod(cen::colors::red);
             }
@@ -167,13 +184,13 @@ void Ghost::render()
             irect {ipoint {render_frame_ * SPRITE_SIZE, 0}, SPRITE_AREA},
             irect {position() + TILE_TO_SPRITE_OFFSET_2D, SPRITE_AREA});
         renderer_.render(eye_texture_,
-            irect {ipoint {eye_frame(Direction::none) * SPRITE_SIZE, 0}, SPRITE_AREA},
+            irect {ipoint {4 * SPRITE_SIZE, 0}, SPRITE_AREA},
             irect {position() + TILE_TO_SPRITE_OFFSET_2D, SPRITE_AREA});
         break;
     case eyes:
         eye_texture_.set_color_mod(cen::colors::white);
         renderer_.render(eye_texture_,
-            irect {ipoint {eye_frame(Direction::down) * SPRITE_SIZE, 0}, SPRITE_AREA},
+            irect {ipoint {eye_frame(direction()) * SPRITE_SIZE, 0}, SPRITE_AREA},
             irect {position() + TILE_TO_SPRITE_OFFSET_2D, SPRITE_AREA});
         break;
     case hidden:

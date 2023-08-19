@@ -1,6 +1,7 @@
 #pragma once
 
 #include "direction.hpp"
+#include "constants.hpp"
 
 #include <centurion/common/math.hpp>
 #include <centurion/video/renderer.hpp>
@@ -21,12 +22,12 @@ protected:
     void set_direction(Direction);
     void set_speed(int speed);
 
+private:
     void wrap_position();
 
-private:
     cen::ipoint position_ {};
     Direction direction_ {Direction::none};
-    int speed_ {2};
+    int speed_ {PACMAN_SPEED};
 };
 
 [[nodiscard]] auto is_colliding(Entity const&, Entity const&) -> bool;

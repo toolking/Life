@@ -4,7 +4,7 @@
 #include <centurion/common/logging.hpp>
 
 Pacman::Pacman(cen::renderer_handle const& renderer)
-  : Entity(PACMAN_START_POS, Direction::none)
+  : Entity(PACMAN_STARTPOS, Direction::none)
   , renderer_ {renderer}
   , texture_ {renderer_.make_texture("assets/pacman.png")}
   , dead_texture_ {renderer_.make_texture("assets/pacman_dead.png")}
@@ -13,7 +13,7 @@ Pacman::Pacman(cen::renderer_handle const& renderer)
 void Pacman::reset() noexcept
 {
     state_ = State::live;
-    set_position(PACMAN_START_POS);
+    set_position(PACMAN_STARTPOS);
     set_direction(Direction::none);
     next_direction_ = Direction::none;
     render_frame_ = 0;
@@ -23,18 +23,18 @@ void Pacman::reset() noexcept
 void Pacman::update_live_frame(Board const& b)
 {
     if (direction() == Direction::none) {
-        render_frame_ = 0;
+        render_frame_ = 0; // undefined direction
         return;
     }
     if (b.is_wall_at_position(position() + direction())) {
-        render_frame_ = 2;
+        render_frame_ = 2; // open mouth
         return;
     }
     constexpr auto FRAMES_SHOWN = 4;
     constexpr auto SPRITE_FRAMES = 3; // O G C
     frame_++;
-    frame_ %= SPRITE_FRAMES * (SPRITE_FRAMES * FRAMES_SHOWN);
-    render_frame_ = frame_ / (SPRITE_FRAMES * FRAMES_SHOWN);
+    frame_ %= SPRITE_FRAMES * SPRITE_FRAMES * FRAMES_SHOWN;
+    render_frame_ = frame_ / SPRITE_FRAMES / FRAMES_SHOWN;
 }
 
 void Pacman::update_dead_frame()
@@ -42,9 +42,9 @@ void Pacman::update_dead_frame()
     constexpr auto FRAMES_SHOWN = 2;
     constexpr auto SPRITE_FRAMES = 10;
     frame_++;
-    frame_ %= SPRITE_FRAMES * (SPRITE_FRAMES * FRAMES_SHOWN);
-    render_frame_ = frame_ / (SPRITE_FRAMES * FRAMES_SHOWN);
-    if (render_frame_ == 0 && frame_ == 0) {
+    frame_ %= SPRITE_FRAMES * SPRITE_FRAMES * FRAMES_SHOWN;
+    render_frame_ = frame_ / SPRITE_FRAMES / FRAMES_SHOWN;
+    if (render_frame_ == 0 && frame_ == 0) { // dead animation ends
         state_ = State::hidden;
     }
 }

@@ -37,7 +37,7 @@ void Fruit::update(Board& board, int level, cen::irect const& pacman_box)
         // check if pacman hit fruit
         if (cen::overlaps(cen::irect {position, cen::iarea {SPRITE_SIZE, SPRITE_SIZE}}, pacman_box)) {
             state_ = State::eaten;
-            auto const score {fruit_scores_.at(std::size_t(active_fruit_))};
+            auto const score {FRUIT_SCORES.at(std::size_t(active_fruit_))};
             board.add_score(score);
             score_texture_ = renderer_.make_texture(font_.render_solid(std::to_string(score).c_str(), cen::colors::white));
             timer_.start(); // show score for 1s
@@ -49,11 +49,12 @@ void Fruit::update(Board& board, int level, cen::irect const& pacman_box)
     case State::hidden:
         // show fruit after 70 or 200 pills eaten
         // if not already shown without eating pills in the meantime
-        if ( std::ranges::contains(SHOW_FRUIT_AT,pills_eaten)&& !(already_shown_for_ == pills_eaten) ) {
-            already_shown_for_ = pills_eaten;
-            state_ = State::shown;
-            timer_.start();
+        if ( !std::ranges::contains(SHOW_FRUIT_AT,pills_eaten) || already_shown_for_ == pills_eaten ) [[likely]] {
+            break;
         }
+        already_shown_for_ = pills_eaten;
+        state_ = State::shown;
+        timer_.start();
         active_fruit_ = std::min(level - 1, MAX_FRUIT_LEVEL) / 3; // set fruit sprite based on level
         break;
     case State::eaten:
@@ -66,6 +67,7 @@ void Fruit::update(Board& board, int level, cen::irect const& pacman_box)
         break;
     }
 }
+
 void Fruit::render()
 {
     switch (state_) {

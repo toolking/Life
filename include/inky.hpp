@@ -13,8 +13,8 @@ public:
     Inky(cen::renderer_handle const& renderer)
       : Ghost {renderer, {
                              .color = cen::colors::cyan,
-                             .start = startpos_of(INKY_CHAR),
-                             .home = startpos_of(INKY_CHAR), // use position in home area
+                             .start = INKY_STARTPOS,
+                             .home = INKY_STARTPOS, // use position in home area
                              .scatter = BOTTOM_RIGHT * TILE_SIZE // bottom right
                          }}
     {}
@@ -33,5 +33,5 @@ public:
     }
 
 private:
-    cen::ipoint blinky_pos_ {startpos_of(BLINKY_CHAR)};
+    cen::ipoint blinky_pos_ {BLINKY_STARTPOS};
 };

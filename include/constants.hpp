@@ -12,9 +12,16 @@ constexpr int FRAME_DURATION_MS = 1000 / MIN_FPS;
 
 constexpr int PILL_SCORE {10};
 constexpr int POWER_PILL_SCORE {50};
+constexpr int GHOST_CATCH_SCORE {200};
+constexpr int GHOST_CATCH_FACTOR {2};
+
 constexpr auto SHOW_FRUIT_AT {std::to_array<int>({70,200})};
 constexpr int MAX_FRUIT_LEVEL {21};
 constexpr int PACMAN_SPEED {2};
+constexpr int CHASE_SPEED {2};
+constexpr int SCATTER_SPEED {1};
+constexpr int EYE_SPEED {3};
+
 constexpr int BOARD_WIDTH {28};
 constexpr int BOARD_HEIGHT {36};
 constexpr int SPRITE_SIZE {32};
@@ -28,10 +35,9 @@ constexpr cen::ipoint TILE_TO_SPRITE_OFFSET_2D {(TILE_SIZE - SPRITE_SIZE) / 2, (
 
 constexpr cen::iarea SPRITE_AREA {SPRITE_SIZE, SPRITE_SIZE};
 constexpr cen::iarea TILE_AREA {TILE_SIZE, TILE_SIZE};
-constexpr cen::irect HOME_CELLS {cen::ipoint {11, 16}, cen::iarea {6, 3}};
+constexpr cen::irect HOME_CELLS {cen::ipoint {11, 15}, cen::iarea {6, 3}};
 constexpr cen::irect HOME_RECT {HOME_CELLS * TILE_SIZE};
 constexpr cen::ipoint DOOR_CELL {cen::ipoint {13, 15}};
-
 constexpr const char* const SMALL_FONT_PATH {"assets/VpPixel.ttf"};
 constexpr unsigned int SMALL_FONT_SIZE {20U};
 constexpr const char* const BIG_FONT_PATH {"assets/emulogic.ttf"};
@@ -81,7 +87,6 @@ constexpr cen::ipoint TOP_RIGHT {27, 3};
 constexpr cen::ipoint BOTTOM_LEFT {0, 33};
 constexpr cen::ipoint BOTTOM_RIGHT {27, 33};
 
-
 static_assert(CHAR_BOARD.size() == BOARD_WIDTH * BOARD_HEIGHT);
 
 [[nodiscard]] constexpr auto count_char(char c) -> int
@@ -100,12 +105,12 @@ constexpr char PINKY_CHAR {'3'};
 constexpr char CLYDE_CHAR {'4'};
 constexpr char FRUIT_CHAR {'F'};
 
-static_assert(count_char('C') == 1, "only one Pacman allowed");
-static_assert(count_char('1') == 1, "only one Blinky allowed");
-static_assert(count_char('2') == 1, "only one Inky allowed");
-static_assert(count_char('3') == 1, "only one Pinky allowed");
-static_assert(count_char('4') == 1, "only one Clyde allowed");
-static_assert(count_char('F') == 1, "only one fruit allowed");
+static_assert(count_char(PACMAN_CHAR) == 1, "only one Pacman allowed");
+static_assert(count_char(BLINKY_CHAR) == 1, "only one Blinky allowed");
+static_assert(count_char(INKY_CHAR) == 1, "only one Inky allowed");
+static_assert(count_char(PINKY_CHAR) == 1, "only one Pinky allowed");
+static_assert(count_char(CLYDE_CHAR) == 1, "only one Clyde allowed");
+static_assert(count_char(FRUIT_CHAR) == 1, "only one fruit allowed");
 
 [[nodiscard]] constexpr auto to_coord(int index) -> cen::ipoint
 {
@@ -124,10 +129,17 @@ static_assert(count_char('F') == 1, "only one fruit allowed");
     return to_coord(static_cast<int>(CHAR_BOARD.find(c)));
 };
 
-[[nodiscard]] constexpr auto startpos_of(char c) -> cen::ipoint // shift half a tile to right
+[[nodiscard]] constexpr auto shift_x_half_cell(cen::ipoint const& pos) -> cen::ipoint // shift half a tile to right
 {
-    return {cell_of(c) * TILE_SIZE + cen::ipoint {TILE_SIZE / 2, 0}};
+    return {pos * TILE_SIZE + cen::ipoint {TILE_SIZE / 2, 0}};
 }
+constexpr auto PACMAN_STARTPOS {shift_x_half_cell(cell_of(PACMAN_CHAR))};
+constexpr auto BLINKY_STARTPOS {shift_x_half_cell(cell_of(BLINKY_CHAR))};
+constexpr auto INKY_STARTPOS {shift_x_half_cell(cell_of(INKY_CHAR))};
+constexpr auto PINKY_STARTPOS {shift_x_half_cell(cell_of(PINKY_CHAR))};
+constexpr auto CLYDE_STARTPOS {shift_x_half_cell(cell_of(CLYDE_CHAR))};
+constexpr auto FRUIT_STARTPOS {shift_x_half_cell(cell_of(FRUIT_CHAR))};
+constexpr auto DOOR_POINT {shift_x_half_cell(DOOR_CELL)-cen::ipoint{0,TILE_SIZE/2}};
 
 /// @brief Calculate the distance between two points, taking into account that the
 ///        points are on a torus (on the other side of the screen).

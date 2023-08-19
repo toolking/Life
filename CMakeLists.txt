@@ -40,21 +40,19 @@ add_executable( Game main.cpp
 target_include_directories( Game PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include )
 target_include_directories( Game SYSTEM PRIVATE ${SDL2_INCLUDE_DIRS} ${centurion_SOURCE_DIR}/src )
 #target_compile_definitions( Game PRIVATE CENTURION_MOCK_FRIENDLY_MODE CENTURION_NO_DEBUG_LOG_MACROS)
-target_link_libraries( Game 
+target_link_libraries( Game
   PRIVATE
-    ${SDL2_LIBRARIES} SDL2_mixer SDL2_ttf SDL2_image )
+    ${SDL2_LIBRARIES} SDL2_mixer SDL2_ttf SDL2_image
+)
 
 target_compile_features( Game
   PUBLIC
     cxx_std_23
 )
 
-target_compile_options(
-  Game
+target_compile_options( Game
   PRIVATE
-    $<$<COMPILE_LANGUAGE:CXX>:${PROJECT_WARNINGS_CXX}>)
+    ${PROJECT_WARNINGS_CXX}
+)
 
 include( FindDoxygen )
-find_package(Doxygen
-             REQUIRED dot
-             OPTIONAL_COMPONENTS mscgen dia)
