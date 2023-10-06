@@ -1,222 +1,117 @@
 #include "board.hpp"
+
 #include "constants.hpp"
 #include "direction.hpp"
 #include "math.hpp"
 
+#include <boost/asio/thread_pool.hpp>
 #include <centurion/common/logging.hpp>
 #include <centurion/common/math.hpp>
 #include <centurion/common/utils.hpp>
-#include <centurion/video/renderer.hpp>
 #include <centurion/video/color.hpp>
+#include <centurion/video/renderer.hpp>
 
 #include <algorithm>
-#include <numeric>
-#include <ranges>
 #include <cmath>
+#include <numeric>
+#include <random>
+#include <ranges>
 #include <string>
 #include <utility>
 
 namespace {
 
-inline constexpr auto init_tiles() -> Board::tiles_type
+auto count_alive_neighbours(cen::ipoint const& p, Board::tiles_type const& board) -> int
 {
-    Board::tiles_type tiles;
-    std::transform(CHAR_BOARD.begin(), CHAR_BOARD.end(), tiles.begin(), [](char tile_char) -> Board::Tile {
-        switch (tile_char) {
-            using enum Board::Tile;
-        case '#': return wall;
-        case '.': return pill;
-        case 'o': return power_pill;
-        case '=': return door;
-        default: return empty;
-        }
-    });
-    return tiles;
+    auto const is_alive = [&board](std::size_t i) -> bool {
+        return board[i] == Board::Tile::alive;
+    };
+    auto const neighbours = std::array<std::size_t, 8> {
+        to_index(cen::ipoint {(p.x() - 1) % BOARD_WIDTH, (p.y() - 1) % BOARD_HEIGHT}),
+        to_index(cen::ipoint {p.x() % BOARD_WIDTH, (p.y() - 1) % BOARD_HEIGHT}),
+        to_index(cen::ipoint {(p.x() + 1) % BOARD_WIDTH, (p.y() - 1) % BOARD_HEIGHT}),
+        to_index(cen::ipoint {(p.x() - 1) % BOARD_WIDTH, p.y() % BOARD_HEIGHT}),
+        to_index(cen::ipoint {(p.x() + 1) % BOARD_WIDTH, p.y() % BOARD_HEIGHT}),
+        to_index(cen::ipoint {(p.x() - 1) % BOARD_WIDTH, (p.y() + 1) % BOARD_HEIGHT}),
+        to_index(cen::ipoint {p.x() % BOARD_WIDTH, (p.y() + 1) % BOARD_HEIGHT}),
+        to_index(cen::ipoint {(p.x() + 1) % BOARD_WIDTH, (p.y() + 1) % BOARD_HEIGHT}),
+    };
+    return static_cast<int>(std::ranges::count_if(neighbours, is_alive));
 }
 
-inline constexpr auto round_per_direction(Direction side_dir, cen::fpoint const& cell_pos) -> cen::ipoint
+auto dice() -> int
 {
-    using enum Direction;
-    switch (side_dir) {
-    case right: return {static_cast<int>(floor(cell_pos.x())), static_cast<int>(floor(cell_pos.y()))};
-    case down: return {static_cast<int>(ceil(cell_pos.x())), static_cast<int>(floor(cell_pos.y()))};
-    case left: return {static_cast<int>(floor(cell_pos.x())), static_cast<int>(ceil(cell_pos.y()))};
-    case up: return {static_cast<int>(ceil(cell_pos.x())), static_cast<int>(ceil(cell_pos.y()))};
-    default: return {};
-    }
-}
+    static std::discrete_distribution<> distr({50, 50});
+    static std::random_device device;
+    static std::mt19937 engine {device()};
+    return distr(engine);
+};
 
 } // namespace
 
 Board::Board(cen::renderer_handle const& renderer)
   : renderer_ {renderer}
-  , board_ {init_tiles()}
-  , board_texture_ {renderer_.make_texture("assets/board.png")}
-  , door_texture_ {renderer_.make_texture("assets/door.png")}
-  , pill_texture_ {renderer_.make_texture("assets/pill.png")}
-  , power_pill_texture_ {renderer_.make_texture("assets/power_pill.png")}
-  , lives_texture_ {renderer_.make_texture("assets/lives.png")}
-  , big_font_ {BIG_FONT_PATH, BIG_FONT_SIZE}
-  , score_label_texture_ {renderer_.make_texture(big_font_.render_solid("Score", cen::colors::white))}
-  , score_texture_ {renderer_.make_texture(big_font_.render_solid("0", cen::colors::white))}
-  , high_score_label_texture_ {renderer_.make_texture(big_font_.render_solid("High Scores", cen::colors::white))}
-  , high_score_texture_ {renderer_.make_texture(big_font_.render_solid("0", cen::colors::white))}
-{}
-
-void Board::set_lives(int lives) noexcept
 {
-    lives_ = lives;
-}
-
-void Board::set_score(int score) noexcept
-{
-    score_ = score;
-    score_texture_ = renderer_.make_texture(big_font_.render_solid(std::to_string(score_).c_str(), cen::colors::white));
-    if (score_ > high_score_) {
-        high_score_ = score_;
-        high_score_texture_ = renderer_.make_texture(big_font_.render_solid(std::to_string(high_score_).c_str(), cen::colors::white));
-    }
-}
-
-void Board::add_score(int score) noexcept
-{
-    set_score(score_ + score);
+    randomize();
 }
 
 auto Board::operator[](cen::ipoint const& cell) const -> Tile const&
 {
-    return board_.at(to_index(cell));
+    return (*current_board_)[to_index(cell)];
 }
 
 auto Board::operator[](cen::ipoint const& cell) -> Tile&
 {
-    return board_.at(to_index(cell));
+    return (*current_board_)[to_index(cell)];
 }
 
-void Board::eat_if_pill(cen::ipoint const& position)
+void Board::randomize()
 {
-    auto const cell_f {position.as_f() / TILE_SIZE};
-    using enum Direction;
-    for (auto const dir : {right, down, left, up}) {
-        auto const board_pos {round_per_direction(dir, cell_f)};
-        auto& tile {(*this)[board_pos]};
-        switch (tile) {
-            using enum Tile;
-        case power_pill: {
-            add_score(POWER_PILL_SCORE);
-            tile = empty; // (*this)[board_pos] = empty;
-            [[maybe_unused]] auto const [ignore, power_pills] = count_pills();
-            CENTURION_LOG_VERBOSE("power pill #%d eaten", POWER_PILLS_COUNT - power_pills);
-            return;
-        }
-        case pill:
-            add_score(PILL_SCORE);
-            tile = empty;
-            return;
-        default: break;
-        }
-    }
+    std::generate(current_board_->begin(), current_board_->end(), []() { return dice() == 0 ? Tile::dead : Tile::alive; });
 }
 
-auto Board::is_wall_at_position(cen::ipoint const& position, bool can_use_door /* false */) const -> bool
+void Board::clear()
 {
-    auto const cell_f {position.as_f() / TILE_SIZE};
-    using enum Direction;
-    for (auto const dir : {right, down, left, up}) {
-        auto const board_pos {round_per_direction(dir, cell_f)};
-        auto const tile {(*this)[board_pos]};
-        switch (tile) {
-            using enum Tile;
-        case wall:
-            return true;
-        case door:
-            return !can_use_door;
-        default: break;
-        }
-    }
-    return false;
-}
-
-auto Board::count_pills() const noexcept -> std::pair<int, int>
-{
-    using int_pair = std::pair<int, int>;
-    return std::accumulate(board_.begin(), board_.end(), int_pair {0, 0}, [](int_pair const& acc, Tile tile) -> int_pair {
-        switch (tile) {
-            using enum Tile;
-        case pill: return {acc.first + 1, acc.second};
-        case power_pill: return {acc.first, acc.second + 1};
-        default: return acc;
-        }
-    });
-}
-
-void Board::reset()
-{
-    board_ = init_tiles();
+    std::fill(current_board_->begin(), current_board_->end(), Tile::dead);
 }
 
 void Board::update()
 {
-}
-
-void Board::render_grid(unsigned size, cen::color color)
-{
-    renderer_.set_color(color);
-    for (auto row {0U}; row < WINDOW_HEIGHT / size; ++row) {
-        for (auto col {0U}; col < WINDOW_WIDTH / size; ++col) {
-            renderer_.draw_rect(cen::irect {cen::cast<int>(col * size), cen::cast<int>(row * size), cen::cast<int>(size), cen::cast<int>(size)});
+    std::swap(current_board_, prev_board_);
+    auto const& base {*prev_board_};
+    for (auto const& [row, col] : std::ranges::cartesian_product_view {std::views::iota(0, BOARD_HEIGHT), std::views::iota(0, BOARD_WIDTH)}) {
+        auto const current_coords {cen::ipoint {col, row}};
+        auto const prev_tile {base[to_index(current_coords)]};
+        auto const alive_neighbours {count_alive_neighbours(current_coords, base)};
+        auto& current_tile {(*this)[current_coords]};
+        if (prev_tile == Tile::dead && alive_neighbours == 3) {
+            current_tile = Tile::alive;
+        } else if (prev_tile == Tile::alive && (alive_neighbours < 2 || alive_neighbours > 3)) {
+            current_tile = Tile::dead;
+        } else {
+            current_tile = prev_tile;
         }
-    }
-}
-
-void Board::render_door()
-{
-    renderer_.render(door_texture_, DOOR_CELL * TILE_SIZE + cen::ipoint {0, TILE_SIZE / 2});
-}
-
-void Board::render_pills()
-{
-    using namespace std::views;
-    using pair_type = std::pair<Tile, cen::ipoint>;
-    auto is_pill = [](auto&& pair) -> bool { return std::get<1>(pair) == Tile::pill || std::get<1>(pair) == Tile::power_pill; };
-    auto to_cell = [](auto&& pair) -> pair_type { return {std::get<1>(pair), {int(std::get<0>(pair) % BOARD_WIDTH), int(std::get<0>(pair) / BOARD_WIDTH)}}; };
-    auto to_coords = [](auto&& pair) -> pair_type { return {std::get<0>(pair), {std::get<1>(pair) * TILE_SIZE}}; };
-    auto pill_coords = board_
-        | enumerate
-        | filter(is_pill)
-        | transform(to_cell)
-        | transform(to_coords);
-
-    std::ranges::for_each(pill_coords, [&](auto const& pos) -> void {
-        renderer_.render(pos.first == Tile::pill ? pill_texture_ : power_pill_texture_, pos.second);
-    });
-}
-
-void Board::render_scores()
-{
-    renderer_.render(score_label_texture_, cen::ipoint {0, 0});
-    renderer_.render(score_texture_, cen::ipoint {0, SPRITE_SIZE});
-
-    renderer_.render(high_score_label_texture_, cen::ipoint {WINDOW_WIDTH / 2, 0});
-    renderer_.render(high_score_texture_, cen::ipoint {WINDOW_WIDTH / 2, SPRITE_SIZE});
-}
-
-void Board::render_lives()
-{
-    for (auto i {0}; i < lives_; ++i) {
-        renderer_.render(lives_texture_, cen::ipoint {i * SPRITE_SIZE, WINDOW_HEIGHT - SPRITE_SIZE} - cen::ipoint {-SPRITE_SIZE / 4, SPRITE_SIZE / 4});
     }
 }
 
 void Board::render()
 {
-    renderer_.clear_with(cen::colors::green);
-    // render_grid(TILE_SIZE, cen::colors::dark_red);
-    // render_grid(SPRITE_SIZE, cen::colors::dark_blue);
-    board_texture_.set_color_mod(cen::colors::blue); // blue wall lines
-    renderer_.render(board_texture_, cen::ipoint {0, 0});
-    render_door();
-    render_pills();
-    render_scores();
-    render_lives();
+    for (auto const& [idx, tile] : *current_board_ | std::views::enumerate) {
+        renderer_.set_color(tile == Tile::alive ? cen::colors::red : cen::colors::black);
+        renderer_.fill_rect(cen::irect {to_coord(static_cast<int>(idx)) * TILE_SIZE, cen::iarea {TILE_SIZE, TILE_SIZE}});
+        // render_neighbour_count(to_coord(static_cast<int>(idx)));
+    }
+}
+
+void Board::render_neighbour_count(cen::ipoint const& cell)
+{
+    if (SMALL_FONT_SIZE > TILE_SIZE)
+        return;
+    auto const num {count_alive_neighbours(cell, *current_board_)};
+    auto const number_texture_ {renderer_.make_texture(font_.render_solid(std::to_string(num).c_str(), cen::colors::white))};
+
+    renderer_.set_color(cen::colors::white);
+    auto const point_x {cell.x() * TILE_SIZE + TILE_SIZE / 2 - number_texture_.width() / 2};
+    auto const point_y {cell.y() * TILE_SIZE + TILE_SIZE / 2 - number_texture_.height() / 2};
+    renderer_.render(number_texture_, cen::ipoint {point_x, point_y});
 }

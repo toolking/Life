@@ -27,6 +27,12 @@ template <typename T>
 }
 
 template <typename T>
+[[nodiscard]] inline constexpr auto operator%(cen::basic_point<T> const& point, typename cen::basic_point<T>::value_type scalar) noexcept -> cen::basic_point<T>
+{
+    return {point.x() % scalar, point.y() % scalar};
+}
+
+template <typename T>
 inline constexpr auto operator/=(cen::basic_point<T>& point, typename cen::basic_point<T>::value_type scalar) noexcept -> cen::basic_point<T>&
 {
     return point = point / scalar;
