@@ -80,17 +80,14 @@ void Game::process_events()
         }
         if (handler.is<cen::mouse_button_event>()) {
             auto const& event = handler.get<cen::mouse_button_event>();
-            CENTURION_LOG_DEBUG("mouse button event %s", event);
 
             if (event.clicks()) {
                 if (event.button() == cen::mouse_button::left) {
                     auto const& cell = event.position() / TILE_SIZE;
                     if (board_[cell] == Board::Tile::dead) {
                         board_[cell] = Board::Tile::alive;
-                        CENTURION_LOG_DEBUG("set to alive %d,%d", cell.x(), cell.y());
                     } else {
                         board_[cell] = Board::Tile::dead;
-                        CENTURION_LOG_DEBUG("set to dead %d,%d", cell.x(), cell.y());
                     }
                 }
             }

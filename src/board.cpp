@@ -4,7 +4,6 @@
 #include "direction.hpp"
 #include "math.hpp"
 
-#include <boost/asio/thread_pool.hpp>
 #include <centurion/common/logging.hpp>
 #include <centurion/common/math.hpp>
 #include <centurion/common/utils.hpp>
@@ -27,21 +26,21 @@ auto count_alive_neighbours(cen::ipoint const& p, Board::tiles_type const& board
         return board[i] == Board::Tile::alive;
     };
     auto const neighbours = std::array<std::size_t, 8> {
-        to_index(cen::ipoint {(p.x() - 1) % BOARD_WIDTH, (p.y() - 1) % BOARD_HEIGHT}),
-        to_index(cen::ipoint {p.x() % BOARD_WIDTH, (p.y() - 1) % BOARD_HEIGHT}),
-        to_index(cen::ipoint {(p.x() + 1) % BOARD_WIDTH, (p.y() - 1) % BOARD_HEIGHT}),
-        to_index(cen::ipoint {(p.x() - 1) % BOARD_WIDTH, p.y() % BOARD_HEIGHT}),
-        to_index(cen::ipoint {(p.x() + 1) % BOARD_WIDTH, p.y() % BOARD_HEIGHT}),
-        to_index(cen::ipoint {(p.x() - 1) % BOARD_WIDTH, (p.y() + 1) % BOARD_HEIGHT}),
-        to_index(cen::ipoint {p.x() % BOARD_WIDTH, (p.y() + 1) % BOARD_HEIGHT}),
-        to_index(cen::ipoint {(p.x() + 1) % BOARD_WIDTH, (p.y() + 1) % BOARD_HEIGHT}),
+        to_index(cen::ipoint {(p.x() + (BOARD_WIDTH - 1)) % BOARD_WIDTH, (p.y() + (BOARD_HEIGHT - 1)) % BOARD_HEIGHT}),
+        to_index(cen::ipoint {(p.x() + (BOARD_WIDTH    )) % BOARD_WIDTH, (p.y() + (BOARD_HEIGHT - 1)) % BOARD_HEIGHT}),
+        to_index(cen::ipoint {(p.x() + (BOARD_WIDTH + 1)) % BOARD_WIDTH, (p.y() + (BOARD_HEIGHT - 1)) % BOARD_HEIGHT}),
+        to_index(cen::ipoint {(p.x() + (BOARD_WIDTH - 1)) % BOARD_WIDTH, (p.y() + (BOARD_HEIGHT    )) % BOARD_HEIGHT}),
+        to_index(cen::ipoint {(p.x() + (BOARD_WIDTH + 1)) % BOARD_WIDTH, (p.y() + (BOARD_HEIGHT    )) % BOARD_HEIGHT}),
+        to_index(cen::ipoint {(p.x() + (BOARD_WIDTH - 1)) % BOARD_WIDTH, (p.y() + (BOARD_HEIGHT + 1)) % BOARD_HEIGHT}),
+        to_index(cen::ipoint {(p.x() + (BOARD_WIDTH    )) % BOARD_WIDTH, (p.y() + (BOARD_HEIGHT + 1)) % BOARD_HEIGHT}),
+        to_index(cen::ipoint {(p.x() + (BOARD_WIDTH + 1)) % BOARD_WIDTH, (p.y() + (BOARD_HEIGHT + 1)) % BOARD_HEIGHT}),
     };
     return static_cast<int>(std::ranges::count_if(neighbours, is_alive));
 }
 
 auto dice() -> int
 {
-    static std::discrete_distribution<> distr({50, 50});
+    static std::discrete_distribution<> distr({70, 30});
     static std::random_device device;
     static std::mt19937 engine {device()};
     return distr(engine);
@@ -79,15 +78,18 @@ void Board::update()
 {
     std::swap(current_board_, prev_board_);
     auto const& base {*prev_board_};
-    for (auto const& [row, col] : std::ranges::cartesian_product_view {std::views::iota(0, BOARD_HEIGHT), std::views::iota(0, BOARD_WIDTH)}) {
+    auto& board {*current_board_};
+    for (auto const [row, col] : std::ranges::cartesian_product_view {std::views::iota(0, BOARD_HEIGHT), std::views::iota(0, BOARD_WIDTH)}) {
         auto const current_coords {cen::ipoint {col, row}};
-        auto const prev_tile {base[to_index(current_coords)]};
+        auto const idx {to_index(current_coords)};
+        auto const prev_tile {base[idx]};
+        auto& current_tile {board[idx]};
         auto const alive_neighbours {count_alive_neighbours(current_coords, base)};
-        auto& current_tile {(*this)[current_coords]};
-        if (prev_tile == Tile::dead && alive_neighbours == 3) {
-            current_tile = Tile::alive;
-        } else if (prev_tile == Tile::alive && (alive_neighbours < 2 || alive_neighbours > 3)) {
-            current_tile = Tile::dead;
+        using enum Tile;
+        if (prev_tile == dead && alive_neighbours == 3) {
+            current_tile = alive;
+        } else if (prev_tile == alive && (alive_neighbours < 2 || alive_neighbours > 3)) {
+            current_tile = dead;
         } else {
             current_tile = prev_tile;
         }

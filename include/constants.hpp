@@ -10,9 +10,9 @@
 constexpr int MIN_FPS = 60;
 constexpr int FRAME_DURATION_MS = 1000 / MIN_FPS;
 
-constexpr int BOARD_WIDTH {490};
-constexpr int BOARD_HEIGHT {192};
-constexpr int TILE_SIZE {4};
+constexpr int BOARD_WIDTH {32};
+constexpr int BOARD_HEIGHT {24};
+constexpr int TILE_SIZE {20};
 constexpr int WINDOW_WIDTH {BOARD_WIDTH * TILE_SIZE};
 constexpr int WINDOW_HEIGHT {BOARD_HEIGHT * TILE_SIZE};
 

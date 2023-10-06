@@ -9,16 +9,6 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable( centurion )
 
-set(BOOST_INCLUDE_LIBRARIES asio thread system)
-set(BOOST_ENABLE_CMAKE ON)
-include(FetchContent)
-FetchContent_Declare(
-  Boost
-  GIT_REPOSITORY https://github.com/boostorg/boost.git
-  GIT_TAG boost-1.83.0
-)
-FetchContent_MakeAvailable(Boost)
-
 find_package( SDL2 REQUIRED )
 include(cmake/CompilerWarnings.cmake)
 
@@ -47,7 +37,6 @@ target_link_libraries( Life
     SDL2_mixer
     SDL2_ttf
     SDL2_image
-    Boost::asio
 )
 
 target_compile_features( Life
